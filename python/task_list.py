@@ -2,6 +2,7 @@ import sys
 from typing import Dict, List, TextIO
 from task import Task
 from task_analytics import TaskAnalytics
+from datetime import datetime 
 
 class TaskList:
     QUIT = "quit"
@@ -46,6 +47,8 @@ class TaskList:
             self._uncheck(parts[1] if len(parts) > 1 else "")
         elif command == "deadline":
             self._add_deadline(parts[1] if len(parts) > 1 else "")
+        elif command == "today":
+            self._today()
         # TODO: implement additional commands from TaskAnalytics
         # elif command == "import":
         # elif command == "export":
@@ -141,16 +144,31 @@ class TaskList:
             assert(int(month) <= 12)
             assert(0<=int(year)<=9999)
         except ValueError:
-            self._output_stream.write(f"This is not a valid date!\n")
+            self._output_stream.write(f"This is not a valid date! Use format DD-MM-YYYY.\n")
             self._output_stream.flush()
             return
         for _, tasks in self._tasks.items():
             for task in tasks:
                 if task.id == task_id:
                     task.deadline = parts[1] if len(parts) > 1 else ""
-                return
+                    return
         self._output_stream.write(f"Could not find a task with an ID of {task_id}.\n")
         self._output_stream.flush()
 
+    def _today(self):
+        current_date = datetime.today().strftime('%d-%m-%Y')
+        for project_name, tasks in self._tasks.items():
+            show_project = False
+            for task in tasks:
+                task_deadline = task.deadline
+                if task_deadline == current_date:
+                    if not show_project:
+                        self._output_stream.write(f"{project_name}\n")
+                        show_project = True
+                    status = 'x' if task.done else ' '
+                    self._output_stream.write(f"    [{status}] {task.id}: {task.description}\n")
+            self._output_stream.write("\n")
+            show_project = False
+        self._output_stream.flush()
 if __name__ == "__main__":
     TaskList.start_console()
