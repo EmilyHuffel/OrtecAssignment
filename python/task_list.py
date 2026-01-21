@@ -3,7 +3,6 @@ from typing import Dict, List, TextIO
 from task import Task
 from task_analytics import TaskAnalytics
 
-
 class TaskList:
     QUIT = "quit"
 
@@ -45,6 +44,8 @@ class TaskList:
             self._check(parts[1] if len(parts) > 1 else "")
         elif command == "uncheck":
             self._uncheck(parts[1] if len(parts) > 1 else "")
+        elif command == "deadline":
+            self._add_deadline(parts[1] if len(parts) > 1 else "")
         # TODO: implement additional commands from TaskAnalytics
         # elif command == "import":
         # elif command == "export":
@@ -60,7 +61,8 @@ class TaskList:
             self._output_stream.write(f"{project_name}\n")
             for task in tasks:
                 status = 'x' if task.done else ' '
-                self._output_stream.write(f"    [{status}] {task.id}: {task.description}\n")
+                deadline = f' (Deadline: {task.deadline})' if len(task.deadline) >= 1 else ''
+                self._output_stream.write(f"    [{status}] {task.id}: {task.description}{deadline}\n")
             self._output_stream.write("\n")
         self._output_stream.flush()
 
@@ -115,6 +117,7 @@ class TaskList:
         self._output_stream.write("  add task <project name> <task description>\n")
         self._output_stream.write("  check <task ID>\n")
         self._output_stream.write("  uncheck <task ID>\n")
+        self._output_stream.write("  deadline <task id> <deadline>\n")
         self._output_stream.write("\n")
         self._output_stream.flush()
 
@@ -125,3 +128,29 @@ class TaskList:
     def _next_id(self) -> int:
         self._last_id += 1
         return self._last_id
+    
+    def _add_deadline(self, command_line: str):
+        parts = command_line.split(" ", 1)
+        try:
+            task_id = int(parts[0])
+        except ValueError:
+            return 
+        try:
+            day, month, year = parts[1].split("-", 3)
+            assert(int(day) <= 31)
+            assert(int(month) <= 12)
+            assert(0<=int(year)<=9999)
+        except ValueError:
+            self._output_stream.write(f"This is not a valid date!\n")
+            self._output_stream.flush()
+            return
+        for _, tasks in self._tasks.items():
+            for task in tasks:
+                if task.id == task_id:
+                    task.deadline = parts[1] if len(parts) > 1 else ""
+                return
+        self._output_stream.write(f"Could not find a task with an ID of {task_id}.\n")
+        self._output_stream.flush()
+
+if __name__ == "__main__":
+    TaskList.start_console()
