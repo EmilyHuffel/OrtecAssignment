@@ -49,6 +49,8 @@ class TaskList:
             self._add_deadline(parts[1] if len(parts) > 1 else "")
         elif command == "today":
             self._today()
+        elif command == "view-by-deadline":
+            self._view_by_deadline()
         # TODO: implement additional commands from TaskAnalytics
         # elif command == "import":
         # elif command == "export":
@@ -170,5 +172,30 @@ class TaskList:
             self._output_stream.write("\n")
             show_project = False
         self._output_stream.flush()
+
+    def _view_by_deadline(self):
+        tasks_organized: Dict[str, Dict[str, List[Task]]] = {}
+
+        # Organize all tasks in a convenient format
+        for project_name, tasks_in_project in self._tasks.items():
+            for task in tasks_in_project:
+                task_deadline = task.deadline if len(task.deadline) else "No deadline"
+                if task_deadline not in tasks_organized.keys():
+                    tasks_organized[task_deadline] = {project_name: []}
+                elif project_name not in tasks_organized[task_deadline].keys():
+                    tasks_organized[task_deadline][project_name] = []
+                tasks_organized[task_deadline][project_name].append(task)
+
+        # Show all tasks sorted by deadline
+        for deadline in sorted(tasks_organized.keys()):
+            self._output_stream.write(f"{deadline}:\n")
+            projects_tasks_at_deadline = tasks_organized[deadline]
+            for project_name in sorted(projects_tasks_at_deadline.keys()):
+                self._output_stream.write(f"  {project_name}:\n")
+                tasks_at_deadline = projects_tasks_at_deadline[project_name]
+                for task in tasks_at_deadline:
+                    self._output_stream.write(f"    {task.id}: {task.description}\n")
+        self._output_stream.flush()
+
 if __name__ == "__main__":
     TaskList.start_console()
