@@ -2,7 +2,7 @@ import sys
 from typing import Dict, List, TextIO
 from task import Task
 from task_analytics import TaskAnalytics
-from datetime import datetime 
+from datetime import datetime, date
 
 class TaskList:
     QUIT = "quit"
@@ -152,10 +152,11 @@ class TaskList:
         for _, tasks in self._tasks.items():
             for task in tasks:
                 if task.id == task_id:
-                    task.deadline = parts[1] if len(parts) > 1 else ""
+                    task.deadline = date(int(year), int(month), int(day)).strftime('%d-%m-%Y')
                     return
         self._output_stream.write(f"Could not find a task with an ID of {task_id}.\n")
         self._output_stream.flush()
+
 
     def _today(self):
         current_date = datetime.today().strftime('%d-%m-%Y')
@@ -187,7 +188,7 @@ class TaskList:
                 tasks_organized[task_deadline][project_name].append(task)
 
         # Show all tasks sorted by deadline
-        for deadline in sorted(tasks_organized.keys()):
+        for deadline in sorted(tasks_organized.keys(), key = lambda date: "-".join(date.split("-")[::-1])):
             self._output_stream.write(f"{deadline}:\n")
             projects_tasks_at_deadline = tasks_organized[deadline]
             for project_name in sorted(projects_tasks_at_deadline.keys()):
