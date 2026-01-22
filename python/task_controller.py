@@ -10,9 +10,9 @@ tasks = TaskList(sys.stdin, sys.stdout)
 @app.route("/tasks")
 def welcome():
 	flash("Welcome to TaskList! Type 'help' for available commands.\n")
-	return render_template("myform.html")
+	return render_template("tasks.html")
 
-@app.route("/response", methods=['POST', 'GET'])
+@app.route("/tasks", methods=['POST', 'GET'])
 def response():
 	flash(tasks.execute(str(request.form['command_input'])).replace("\n", '<br>'))
-	return render_template("myform.html")
+	return render_template("tasks.html")

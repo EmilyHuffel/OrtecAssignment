@@ -5,7 +5,7 @@
     <title>TaskLister</title>
 </head>
 <body>
-    <form action="response" method="post">
+    <form action="tasks" method="post">
         {% for message in get_flashed_messages() %}
             {% autoescape False %} 
                 <pre><p>{{ message }}</p></pre>
