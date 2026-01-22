@@ -1,8 +1,18 @@
-from flask import Flask, jsonify
+from flask import Flask, render_template, request, flash
+from task_list import TaskList
+import sys 
 
 app = Flask(__name__)
+app.secret_key = "super_secret_passkey"
 
+tasks = TaskList(sys.stdin, sys.stdout)
 
-@app.route('/tasks', methods=['GET'])
-def get_tasks():
-    return jsonify(["Task 1", "Task 2", "Task 3"])
+@app.route("/tasks")
+def welcome():
+	flash("Welcome to TaskList! Type 'help' for available commands.\n")
+	return render_template("myform.html")
+
+@app.route("/response", methods=['POST', 'GET'])
+def response():
+	flash(tasks.execute(str(request.form['command_input'])).replace("\n", '<br>'))
+	return render_template("myform.html")
