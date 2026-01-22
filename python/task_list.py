@@ -10,31 +10,44 @@ class TaskList_ShowData:
         self._output_stream = output_stream
 
     def _show(self):
+        output = ''
         for project_name, tasks in self._tasks.items():
-            self._output_stream.write(f"{project_name}\n")
+            output_project = f"{project_name}\n"
+            self._output_stream.write(output_project)
+            output += output_project
             for task in tasks:
                 status = 'x' if task.done else ' '
                 deadline = f' (Deadline: {task.deadline})' if len(task.deadline) >= 1 else ''
-                self._output_stream.write(f"    [{status}] {task.id}: {task.description}{deadline}\n")
+                output_task = f"    [{status}] {task.id}: {task.description}{deadline}\n"
+                self._output_stream.write(output_task)
+                output += output_task
             self._output_stream.write("\n")
+            output += "\n"
         self._output_stream.flush()
+        return output
 
     def _help(self):
-        self._output_stream.write("Commands:\n")
-        self._output_stream.write("  show\n")
-        self._output_stream.write("  add project <project name>\n")
-        self._output_stream.write("  add task <project name> <task description>\n")
-        self._output_stream.write("  check <task ID>\n")
-        self._output_stream.write("  uncheck <task ID>\n")
-        self._output_stream.write("  deadline <task id> <deadline>\n")
-        self._output_stream.write("\n")
+        output =  "Commands:\n"
+        output += "  show\n"
+        output += "  add project <project name>\n"
+        output += "  add task <project name> <task description>\n"
+        output += "  check <task ID>\n"
+        output += "  uncheck <task ID>\n"
+        output += "  deadline <task id> <deadline>\n"
+        output += "  view-by-deadline\n"
+        output += "\n"
+        self._output_stream.write(output)
         self._output_stream.flush()
+        return output
 
     def _error(self, command: str):
-        self._output_stream.write(f'I don\'t know what the command "{command}" is.\n')
+        output = f'I don\'t know what the command "{command}" is.\n'
+        self._output_stream.write(output)
         self._output_stream.flush()
+        return output
 
     def _today(self):
+        output = ''
         current_date = datetime.today().strftime('%d-%m-%Y')
         for project_name, tasks in self._tasks.items():
             show_project = False
@@ -42,15 +55,22 @@ class TaskList_ShowData:
                 task_deadline = task.deadline
                 if task_deadline == current_date:
                     if not show_project:
-                        self._output_stream.write(f"{project_name}\n")
+                        output_project = f"{project_name}\n"
+                        self._output_stream.write(output_project)
+                        output += output_project
                         show_project = True
                     status = 'x' if task.done else ' '
-                    self._output_stream.write(f"    [{status}] {task.id}: {task.description}\n")
+                    output_task = f"    [{status}] {task.id}: {task.description}\n"
+                    self._output_stream.write(output_task)
+                    output += output_task
             self._output_stream.write("\n")
+            output += "\n"
             show_project = False
         self._output_stream.flush()
+        return output
 
     def _view_by_deadline(self):
+        output = ''
         tasks_organized: Dict[str, Dict[str, List[Task]]] = {}
 
         # Organize all tasks in a convenient format
@@ -65,14 +85,21 @@ class TaskList_ShowData:
 
         # Show all tasks sorted by deadline
         for deadline in sorted(tasks_organized.keys(), key = lambda date: "-".join(date.split("-")[::-1])):
-            self._output_stream.write(f"{deadline}:\n")
+            output_deadline = f"{deadline}:\n"
+            self._output_stream.write(output_deadline)
+            output += output_deadline
             projects_tasks_at_deadline = tasks_organized[deadline]
             for project_name in sorted(projects_tasks_at_deadline.keys()):
-                self._output_stream.write(f"  {project_name}:\n")
+                output_project = f"  {project_name}:\n"
+                self._output_stream.write(output_project)
+                output += output_project
                 tasks_at_deadline = projects_tasks_at_deadline[project_name]
                 for task in tasks_at_deadline:
-                    self._output_stream.write(f"    {task.id}: {task.description}\n")
+                    output_task = f"    {task.id}: {task.description}\n"
+                    self._output_stream.write(output_task)
+                    output += output_task
         self._output_stream.flush()
+        return output
 
 class TaskList_AddElements:
     def __init__(self):
@@ -84,24 +111,28 @@ class TaskList_AddElements:
         subcommand = parts[0]
         
         if subcommand == "project":
-            self._add_project(parts[1] if len(parts) > 1 else "")
+            return self._add_project(parts[1] if len(parts) > 1 else "")
         elif subcommand == "task":
             task_parts = parts[1].split(" ", 1) if len(parts) > 1 else []
             if len(task_parts) >= 2:
-                self._add_task(task_parts[0], task_parts[1])
-
+                return self._add_task(task_parts[0], task_parts[1])
+            return "Error: no task description given\n"
+        
     def _add_project(self, name: str):
         self._tasks[name] = []
-
+        return f"Added project {name}\n"
+    
     def _add_task(self, project: str, description: str):
         project_tasks = self._tasks.get(project)
         if project_tasks is None:
-            self._output_stream.write(f'Could not find a project with the name "{project}".\n')
+            output = f'Could not find a project with the name "{project}".\n'
+            self._output_stream.write(output)
             self._output_stream.flush()
-            return
+            return output
         
         project_tasks.append(Task(self._next_id(), description, False))
-
+        return f'Added task {description} to project {project}\n'
+    
     def _next_id(self) -> int:
         self._last_id += 1
         return self._last_id
@@ -111,23 +142,27 @@ class TaskList_AddElements:
         try:
             task_id = int(parts[0])
         except ValueError:
-            return 
+            self._output_stream.write("No valid Task ID given\n")
+            self._output_stream.flush()
+            return "No valid Task ID given.\n"
         try:
             day, month, year = parts[1].split("-", 3)
             assert(int(day) <= 31)
             assert(int(month) <= 12)
             assert(0<=int(year)<=9999)
         except ValueError:
-            self._output_stream.write(f"This is not a valid date! Use format DD-MM-YYYY.\n")
+            self._output_stream.write("This is not a valid date! Use format DD-MM-YYYY.\n")
             self._output_stream.flush()
-            return
+            return "This is not a valid date! Use format DD-MM-YYYY.\n"
         for _, tasks in self._tasks.items():
             for task in tasks:
                 if task.id == task_id:
                     task.deadline = date(int(year), int(month), int(day)).strftime('%d-%m-%Y')
-                    return
-        self._output_stream.write(f"Could not find a task with an ID of {task_id}.\n")
+                    return f"Added deadline to task.\n"
+        output = f"Could not find a task with an ID of {task_id}.\n"
+        self._output_stream.write(output)
         self._output_stream.flush()
+        return output
 
 class TaskList_ModifyElements:
     def __init__(self, output_stream: TextIO):
@@ -135,25 +170,37 @@ class TaskList_ModifyElements:
         self._output_stream = output_stream
 
     def _check(self, id_string: str):
-        self._set_done(id_string, True)
+        output = self._set_done(id_string, True)
+
+        return output
 
     def _uncheck(self, id_string: str):
-        self._set_done(id_string, False)
+        output = self._set_done(id_string, False)
 
+        return output
+    
     def _set_done(self, id_string: str, done: bool):
         try:
             task_id = int(id_string)
         except ValueError:
-            return
+            output = f"{task_id} is not a valid ID"
+            self._output_stream.write(output)
+            self._output_stream.flush()
+            return output
         
         for _, tasks in self._tasks.items():
             for task in tasks:
                 if task.id == task_id:
                     task.done = done
-                    return
+                    output = f"{'Checked' if done else 'Unchecked'} {task_id}.\n"
+                    self._output_stream.write(output)
+                    self._output_stream.flush()
+                    return output
         
-        self._output_stream.write(f"Could not find a task with an ID of {task_id}.\n")
+        output = f"Could not find a task with an ID of {task_id}.\n"
+        self._output_stream.write(output)
         self._output_stream.flush()
+        return output
 
 class TaskList(TaskList_ShowData, TaskList_AddElements, TaskList_ModifyElements):
     QUIT = "quit"
@@ -190,31 +237,30 @@ class TaskList(TaskList_ShowData, TaskList_AddElements, TaskList_ModifyElements)
         command = parts[0]
         
         if command == "show":
-            self._show()
+            return self._show()
         elif command == "add":
-            self._add(parts[1] if len(parts) > 1 else "")
+            return self._add(parts[1] if len(parts) > 1 else "")
         elif command == "check":
-            self._check(parts[1] if len(parts) > 1 else "")
+            return self._check(parts[1] if len(parts) > 1 else "")
         elif command == "uncheck":
-            self._uncheck(parts[1] if len(parts) > 1 else "")
+            return self._uncheck(parts[1] if len(parts) > 1 else "")
         elif command == "deadline":
-            self._add_deadline(parts[1] if len(parts) > 1 else "")
+            return self._add_deadline(parts[1] if len(parts) > 1 else "")
         elif command == "today":
-            self._today()
+            return self._today()
         elif command == "view-by-deadline":
-            self._view_by_deadline()
+            return self._view_by_deadline()
         # TODO: implement additional commands from TaskAnalytics
         # elif command == "import":
         # elif command == "export":
         # elif command == "summary":
         # etc.
         elif command == "help":
-            self._help()
+            return self._help()
         else:
-            self._error(command)
-
-
-
+            return self._error(command)
 
 if __name__ == "__main__":
     TaskList.start_console()
+
+
