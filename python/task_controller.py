@@ -14,5 +14,16 @@ def welcome():
 
 @app.route("/tasks", methods=['POST', 'GET'])
 def response():
-	flash(tasks.execute(str(request.form['command_input'])).replace("\n", '<br>'))
+	flash(tasks.execute(str(request.form['command_input'])))
 	return render_template("tasks.html")
+
+@app.route("/projects", methods=["GET"])
+def projects():
+	flash(tasks.execute('show'))
+	return render_template('projects.html')
+
+@app.route("/projects", methods=["POST", "GET"])
+def add_projects():
+    tasks.execute(f"add project {request.form['project_to_create']}")
+    flash(tasks.execute('show').replace("\n", '<br>'))
+    return render_template('projects.html')

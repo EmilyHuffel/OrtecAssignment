@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>TaskLister - create a project</title>
+</head>
+<body>
+    <form action="projects" method="post">
+        {% for message in get_flashed_messages() %}
+            {% autoescape False %} 
+                <pre><p>{{ message }}</p></pre>
+            {% endautoescape %}
+        {% endfor %}
+        <br>
+        <input type="text" name="project_to_create">
+        <input type="submit" value="Enter Command" id="Project name to add">
+    </form>
+</body>
+</html>
