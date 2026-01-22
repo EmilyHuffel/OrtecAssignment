@@ -2,6 +2,12 @@ import io
 import pytest
 from task_list import TaskList
 from datetime import datetime
+from task_analytics import TaskAnalytics 
+from task import Task
+import pandas as pd
+import os
+
+analytics = TaskAnalytics()
 
 @pytest.fixture
 def task_list() -> TaskList:
@@ -413,3 +419,139 @@ def test_deadline(task_list: TaskList, output_stream: io.StringIO) -> None:
     ]
     
     assert lines == expected_lines
+
+def test_import_from_dict():
+    task1 = Task(1, 'Eat donuts', False)
+    task2 = Task(2, 'Dishes', True)
+    task3 = Task(3, 'Dinner', True)
+    task4 = Task(4, 'Clean floor', True)
+    task5 = Task(5, 'Paint minis', False)
+
+    input_dict = {'Food': [task1, task3], 'Chores': [task2, task4], 'Fun': [task5]}
+    input_dict['Food'][1].deadline = '01-01-2027'
+
+    df = analytics.import_from_dict(input_dict)
+    target_df = pd.DataFrame([['Food', 1, 'Eat donuts', False, pd.NaT, task1],
+                               ['Food', 3, 'Dinner', True, datetime(2027, 1, 1), task3],
+                               ['Chores', 2, 'Dishes', True, pd.NaT, task2],
+                               ['Chores', 4, 'Clean floor', True, pd.NaT, task4],
+                               ['Fun', 5, 'Paint minis', False, pd.NaT, task5]
+                               ], columns=['project_name','task_id','description','done','deadline','task'])
+
+    assert df.equals(target_df)
+
+def test_export_to_dict():
+    task1 = Task(1, 'Eat donuts', False)
+    task2 = Task(2, 'Dishes', True)
+    task3 = Task(3, 'Dinner', True)
+    task4 = Task(4, 'Clean floor', True)
+    task5 = Task(5, 'Paint minis', False)
+    input_df = pd.DataFrame([['Food', 1, 'Eat donuts', False, pd.NaT, task1],
+                               ['Food', 3, 'Dinner', True, datetime(2027, 1, 1), task3],
+                               ['Chores', 2, 'Dishes', True, pd.NaT, task2],
+                               ['Chores', 4, 'Clean floor', True, pd.NaT, task4],
+                               ['Fun', 5, 'Paint minis', False, pd.NaT, task5]
+                               ], columns=['project_name','task_id','description','done','deadline','task'])
+    output_dict = analytics.export_to_dict(input_df)
+    assert output_dict == {'Food': [task1, task3], 'Chores': [task2, task4], 'Fun': [task5]}
+
+def test_export_to_csv():
+    task1 = Task(1, 'Eat donuts', False)
+    task2 = Task(2, 'Dishes', True)
+    task3 = Task(3, 'Dinner', True)
+    task4 = Task(4, 'Clean floor', True)
+    task5 = Task(5, 'Paint minis', False)
+    input_df = pd.DataFrame([['Food', 1, 'Eat donuts', False, pd.NaT, task1],
+                               ['Food', 3, 'Dinner', True, datetime(2027, 1, 1), task3],
+                               ['Chores', 2, 'Dishes', True, pd.NaT, task2],
+                               ['Chores', 4, 'Clean floor', True, pd.NaT, task4],
+                               ['Fun', 5, 'Paint minis', False, pd.NaT, task5]
+                               ], columns=['project_name','task_id','description','done','deadline','task'])
+    analytics.export_to_csv(input_df, 'temp.csv')
+    f = open('temp.csv', 'r')
+    assert f.readlines() == ['project_name,task_id,description,done,deadline\n', 'Food,1,Eat donuts,False,\n', 'Food,3,Dinner,True,01-01-2027\n', 'Chores,2,Dishes,True,\n', 'Chores,4,Clean floor,True,\n', 'Fun,5,Paint minis,False,\n']
+    f.close()
+
+def test_import_from_csv():
+    df = analytics.import_from_csv('temp.csv')
+    test_df = pd.DataFrame([['Food', 1, 'Eat donuts', False, pd.NaT],
+                               ['Food', 3, 'Dinner', True, datetime(2027, 1, 1)],
+                               ['Chores', 2, 'Dishes', True, pd.NaT],
+                               ['Chores', 4, 'Clean floor', True, pd.NaT],
+                               ['Fun', 5, 'Paint minis', False, pd.NaT]],
+                               columns=['project_name','task_id','description','done','deadline'])
+    assert df.equals(test_df)
+    os.remove('temp.csv')
+
+def test_project_summary():
+    task1 = Task(1, 'Eat donuts', False)
+    task2 = Task(2, 'Dishes', True)
+    task3 = Task(3, 'Dinner', True)
+    task4 = Task(4, 'Clean floor', True)
+    task5 = Task(5, 'Paint minis', False)
+    df = pd.DataFrame([['Food', 1, 'Eat donuts', False, datetime(1999, 9, 3), task1],
+                        ['Food', 3, 'Dinner', True, datetime(2027, 1, 1), task3],
+                        ['Chores', 2, 'Dishes', True, datetime(3000,5,13), task2],
+                        ['Chores', 4, 'Clean floor', True, pd.NaT, task4],
+                        ['Fun', 5, 'Paint minis', False, pd.NaT, task5]
+                        ], columns=['project_name','task_id','description','done','deadline','task'])
+    project_summary = analytics.get_project_summary(df)
+    test_df = pd.DataFrame([['Chores', 2, 2, 0, 100.0],
+                                            ['Food', 2, 1, 1, 50.0],
+                                            ['Fun', 1, 0, 1, 0.0]],
+                                            columns=['project_name', 'total_tasks', 'completed_tasks', 'pending_tasks', 'completion_rate'])
+    assert project_summary.equals(test_df)
+
+def test_top_projects_by_completion():
+    task1 = Task(1, 'Eat donuts', False)
+    task2 = Task(2, 'Dishes', True)
+    task3 = Task(3, 'Dinner', True)
+    task4 = Task(4, 'Clean floor', True)
+    task5 = Task(5, 'Paint minis', False)
+    df = pd.DataFrame([['Food', 1, 'Eat donuts', False, datetime(1999, 9, 3), task1],
+                        ['Food', 3, 'Dinner', True, datetime(2027, 1, 1), task3],
+                        ['Chores', 2, 'Dishes', True, datetime(3000,5,13), task2],
+                        ['Chores', 4, 'Clean floor', True, pd.NaT, task4],
+                        ['Fun', 5, 'Paint minis', False, pd.NaT, task5]
+                        ], columns=['project_name','task_id','description','done','deadline','task'])
+    top_projects = analytics.get_top_projects_by_completion(df, 2)
+    test_df = pd.DataFrame([['Chores', 100.0],['Food', 50.0]], columns=['project_name','completion_rate'])
+    assert top_projects.equals(test_df)
+
+def test_find_tasks_by_keyword():
+    task1 = Task(1, 'Eat donuts', False)
+    task2 = Task(2, 'Dishes', True)
+    task3 = Task(3, 'Dinner', True)
+    task4 = Task(4, 'Clean floor', True)
+    task5 = Task(5, 'Paint minis', False)
+    df = pd.DataFrame([['Food', 1, 'Eat donuts', False, datetime(1999, 9, 3), task1],
+                        ['Food', 3, 'Dinner', True, datetime(2027, 1, 1), task3],
+                        ['Chores', 2, 'Dishes', True, datetime(3000,5,13), task2],
+                        ['Chores', 4, 'Clean floor', True, pd.NaT, task4],
+                        ['Fun', 5, 'Paint minis', False, pd.NaT, task5]
+                        ], columns=['project_name','task_id','description','done','deadline','task'])
+    tasks_with_di = analytics.find_tasks_by_keyword(df, 'di')
+    test_df = pd.DataFrame([['Food',3,'Dinner',True,datetime(2027,1,1), task3],
+                           ['Chores', 2, 'Dishes', True, datetime(3000,5,13), task2]], 
+                           columns=['project_name','task_id','description','done','deadline','task'], 
+                           index=[1,2])
+    assert tasks_with_di.equals(test_df)
+
+def test_find_overdue_tasks():
+    task1 = Task(1, 'Eat donuts', False)
+    task2 = Task(2, 'Dishes', True)
+    task3 = Task(3, 'Dinner', True)
+    task4 = Task(4, 'Clean floor', True)
+    task5 = Task(5, 'Paint minis', False)
+    df = pd.DataFrame([['Food', 1, 'Eat donuts', False, datetime(1999, 9, 3), task1],
+                        ['Food', 3, 'Dinner', True, datetime(2027, 1, 1), task3],
+                        ['Chores', 2, 'Dishes', True, datetime(3000,5,13), task2],
+                        ['Chores', 4, 'Clean floor', True, pd.NaT, task4],
+                        ['Fun', 5, 'Paint minis', False, pd.NaT, task5]
+                        ], columns=['project_name','task_id','description','done','deadline','task'])
+    df_overdue = analytics.find_overdue_tasks(df, '22-01-2040')
+    test_df = pd.DataFrame([['Food', 1, 'Eat donuts', False, datetime(1999, 9, 3), task1],
+                           ['Food', 3, 'Dinner', True, datetime(2027, 1, 1), task3]], 
+                           columns=['project_name','task_id','description','done','deadline','task'], 
+                           index=[0,1])
+    assert df_overdue.equals(test_df)
