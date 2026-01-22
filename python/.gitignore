@@ -37,3 +37,5 @@ env/
 .pytest_cache/
 .coverage
 htmlcov/
+
+task_list_old.py
