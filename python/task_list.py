@@ -171,12 +171,10 @@ class TaskList_ModifyElements:
 
     def _check(self, id_string: str):
         output = self._set_done(id_string, True)
-
         return output
 
     def _uncheck(self, id_string: str):
         output = self._set_done(id_string, False)
-
         return output
     
     def _set_done(self, id_string: str, done: bool):
