@@ -235,6 +235,7 @@ class TaskList(TaskList_ShowData, TaskList_AddElements, TaskList_ModifyElements)
             self.execute(command)
 
     def execute(self, command_line: str):
+        analytics = TaskAnalytics()
         parts = command_line.split(" ", 1)
         command = parts[0]
         
@@ -252,11 +253,79 @@ class TaskList(TaskList_ShowData, TaskList_AddElements, TaskList_ModifyElements)
             return self._today()
         elif command == "view-by-deadline":
             return self._view_by_deadline()
-        # TODO: implement additional commands from TaskAnalytics
-        # elif command == "import":
-        # elif command == "export":
-        # elif command == "summary":
-        # etc.
+        elif command == "import":
+            try:
+                df = analytics.import_from_csv(parts[1] if len(parts) > 1 else "")
+                df['task'] = df.apply(lambda x: Task(x['task_id'], x['description'], x['done']), axis=1)
+                self._tasks = analytics.export_to_dict(df)
+                output = "File found and imported as tasks (overwrote old tasks)\n"
+            except FileNotFoundError:
+                output = "Filename not found.\n"
+            else:
+                output = "Import encountered an unexpected error.\n"
+            self._output_stream.write(output)
+            self._output_stream.flush()
+            return output
+        elif command == "export":
+            if len(parts) > 1:
+                df = analytics.import_from_dict(self._tasks)
+                analytics.export_to_csv(df, parts[1])
+                output = "Tasks exported to file succesfully.\n"
+            else:
+                output = "No path given.\n"
+            self._output_stream.write(output)
+            self._output_stream.flush()
+            return output
+        elif command == "summary":
+            df = analytics.import_from_dict(self._tasks)
+            summary = analytics.get_project_summary(df)
+            output = summary.to_string(index=False) + '\n' if not summary.empty else '\n'
+            self._output_stream.write(output)
+            self._output_stream.flush()
+            return output 
+        elif command == "top-projects":
+            if len(parts) > 1:
+                try:
+                    n = int(parts[1])
+                except ValueError:
+                    output = 'No valid number given.\n'
+                    self._output_stream.write(output)
+                    self._output_stream.flush()
+                    return output 
+            else:
+                output = 'No valid number given.\n'
+                self._output_stream.write(output)
+                self._output_stream.flush()
+                return output
+            df = analytics.import_from_dict(self._tasks)
+            top_projects = analytics.get_top_projects_by_completion(df, n)
+            output = top_projects.to_string(index=False) + '\n'
+            self._output_stream.write(output)
+            self._output_stream.flush()
+            return output 
+        elif command == "find-tasks-by-keyword":
+            keyword = parts[1] if len(parts)>1 else ""
+            df = analytics.import_from_dict(self._tasks)
+            tasks_by_keyword = analytics.find_tasks_by_keyword(df, keyword)
+            output = tasks_by_keyword.to_string(index=False) + '\n' if not tasks_by_keyword.empty else '\n'
+            self._output_stream.write(output)
+            self._output_stream.flush()
+            return output 
+        elif command == "find-overdue":
+            current_date = parts[1] if len(parts) > 1 else ""
+            try:
+                datetime.strptime(current_date, '%d-%m-%Y')
+            except ValueError:
+                output = "Not a valid date.\n"
+                self._output_stream.write(output)
+                self._output_stream.flush()
+                return output
+            df = analytics.import_from_dict(self._tasks)
+            overdue = analytics.find_overdue_tasks(df, current_date)
+            output = overdue.to_string(index=False) + '\n' if not overdue.empty else 'No overdue tasks.\n'
+            self._output_stream.write(output)
+            self._output_stream.flush()
+            return output 
         elif command == "help":
             return self._help()
         else:
