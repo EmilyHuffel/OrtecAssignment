@@ -102,7 +102,7 @@ class TaskList_ShowData:
         return output
 
 class TaskList_AddElements:
-    def __init__(self):
+    def __init__(self, output_stream: TextIO):
         self._tasks: Dict[str, List[Task]] = {}
         self._last_id = 0
 
@@ -202,14 +202,11 @@ class TaskList_ModifyElements:
 
 class TaskList(TaskList_ShowData, TaskList_AddElements, TaskList_ModifyElements):
     QUIT = "quit"
-
     def __init__(self, input_stream: TextIO, output_stream: TextIO):
         self._tasks: Dict[str, List[Task]] = {}
         self._input_stream = input_stream
         self._output_stream = output_stream
         self._last_id = 0
-        self._analytics = TaskAnalytics()
-
 
     @staticmethod
     def start_console():
