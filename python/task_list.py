@@ -35,6 +35,12 @@ class TaskList_ShowData:
         output += "  uncheck <task ID>\n"
         output += "  deadline <task id> <deadline>\n"
         output += "  view-by-deadline\n"
+        output += "  import <filepath>\n"
+        output += "  export <filepath>\n"
+        output += "  summary\n"
+        output += "  top-projects <number of projects>\n"
+        output += "  find-tasks-by-keyword <keyword>\n"
+        output += "  find-overdue <current date>\n"
         output += "\n"
         self._output_stream.write(output)
         self._output_stream.flush()
@@ -105,6 +111,7 @@ class TaskList_AddElements:
     def __init__(self, output_stream: TextIO):
         self._tasks: Dict[str, List[Task]] = {}
         self._last_id = 0
+        self._output_stream = output_stream
 
     def _add(self, command_line: str):
         parts = command_line.split(" ", 1)

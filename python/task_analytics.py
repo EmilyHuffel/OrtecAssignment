@@ -88,5 +88,5 @@ class TaskAnalytics:
         """Find all incomplete tasks past their deadline.
         """
         df_overdue = df.loc[df['deadline'] < datetime.strptime(current_date, '%d-%m-%Y')]
-        df_overdue[['deadline']] = pd.to_datetime(df_overdue['deadline'])
+        df_overdue['deadline'] = pd.to_datetime(df_overdue['deadline'])
         return df_overdue[['project_name', 'task_id', 'description', 'done', 'deadline']]

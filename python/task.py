@@ -32,10 +32,3 @@ class Task:
     @deadline.deleter
     def deadline(self):
         self._deadline = ""
-
-if __name__ == "__main__":
-    task1 = Task(1, "test 1", False)
-    task1.deadline = "01-01-2026"
-    print(task1.deadline)
-    del task1.deadline
-    print('deadline: ', task1.deadline)

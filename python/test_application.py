@@ -531,9 +531,9 @@ def test_find_tasks_by_keyword():
                         ['Fun', 5, 'Paint minis', False, pd.NaT, task5]
                         ], columns=['project_name','task_id','description','done','deadline','task'])
     tasks_with_di = analytics.find_tasks_by_keyword(df, 'di')
-    test_df = pd.DataFrame([['Food',3,'Dinner',True,datetime(2027,1,1), task3],
-                           ['Chores', 2, 'Dishes', True, datetime(3000,5,13), task2]], 
-                           columns=['project_name','task_id','description','done','deadline','task'], 
+    test_df = pd.DataFrame([['Food',3,'Dinner',True,datetime(2027,1,1)],
+                           ['Chores', 2, 'Dishes', True, datetime(3000,5,13)]], 
+                           columns=['project_name','task_id','description','done','deadline'], 
                            index=[1,2])
     assert tasks_with_di.equals(test_df)
 
@@ -550,8 +550,8 @@ def test_find_overdue_tasks():
                         ['Fun', 5, 'Paint minis', False, pd.NaT, task5]
                         ], columns=['project_name','task_id','description','done','deadline','task'])
     df_overdue = analytics.find_overdue_tasks(df, '22-01-2040')
-    test_df = pd.DataFrame([['Food', 1, 'Eat donuts', False, datetime(1999, 9, 3), task1],
-                           ['Food', 3, 'Dinner', True, datetime(2027, 1, 1), task3]], 
-                           columns=['project_name','task_id','description','done','deadline','task'], 
+    test_df = pd.DataFrame([['Food', 1, 'Eat donuts', False, datetime(1999, 9, 3)],
+                           ['Food', 3, 'Dinner', True, datetime(2027, 1, 1)]], 
+                           columns=['project_name','task_id','description','done','deadline'], 
                            index=[0,1])
     assert df_overdue.equals(test_df)
